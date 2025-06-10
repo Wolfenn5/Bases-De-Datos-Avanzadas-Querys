@@ -1,3 +1,16 @@
+-- Filosofia ACID "Atomicidad , consistencia, aislamiento, durabilidad"
+-- Atomicidad: las transacciones son todo o nada
+-- Consistencia: solo se guardan datos validos
+-- Aislamiento: las transacciones no se afectan entre si
+-- Durabilidad: los datos escritos no se perderan
+
+
+
+
+
+
+
+
 -- Tabla de cuentas bancarias
 DROP TABLE IF EXISTS cuentas;
 CREATE TABLE cuentas (
@@ -33,11 +46,6 @@ SELECT * FROM cuentas ORDER BY id ASC;
 SELECT * FROM movimientos;
 
 
--- Filosofia ACID "Atomicidad , consistencia, aislamiento, durabilidad"
--- Atomicidad: las transacciones son todo o nada
--- Consistencia: solo se guardan datos validos
--- Aislamiento: las transacciones no se afectan entre si
--- Durabilidad: los datos escritos no se perderan
 
 
 
