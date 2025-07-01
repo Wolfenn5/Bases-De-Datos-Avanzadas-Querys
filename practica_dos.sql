@@ -1,84 +1,98 @@
--- Funcion asociada a un trigger
-CREATE OR REPLACE FUNCTION actualizar_log_sueldos()
-RETURNS trigger -- esto indica que es un trigger
-AS $$
-    BEGIN
-        -- Si el sueldo cambio entonces:
-        IF OLD.sueldo IS DISTINCT FROM NEW.sueldo THEN
-            INSERT INTO log_sueldos(empleado_id,sueldo_anterior,sueldo_nuevo) 
-            VALUES (OLD.id,OLD.sueldo,NEW.sueldo);
-        END IF;
-        RETURN NEW; -- en los triggers si estan asociados a un UPDATE, es obligatorio regresar la variable NEW
-    END
-$$ LANGUAGE plpgsql;
+-- Crear esquema principal
+CREATE SCHEMA empresa;
 
+-- Tabla de empleados
+CREATE TABLE empresa.empleados (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    departamento VARCHAR(50) NOT NULL,
+    salario NUMERIC(10,2) NOT NULL
+);
 
--- Crear un trigger
-CREATE TRIGGER disparador_tabla_empleados_sueldo 
-    AFTER UPDATE ON empleados -- despues de que haya un UPDATE en la tabla empleados
- -- AFTER INSERT
- -- AFTER DELETE
- -- BEFORE UPDATE
- -- BEFORE DELETE
- -- AFTER UPDATE OR INSERT ON 
-    FOR EACH ROW EXECUTE FUNCTION actualizar_log_sueldos(); -- para cada renglon se debe ejecutar esta funcion
+-- Tabla de ventas
+CREATE TABLE empresa.ventas (
+    id SERIAL PRIMARY KEY,
+    cliente VARCHAR(100) NOT NULL,
+    monto NUMERIC(10,2) NOT NULL,
+    comision NUMERIC(10,2)  -- Columna sensible
+);
 
+-- Insertar datos de prueba
+INSERT INTO empresa.empleados (nombre, departamento, salario) VALUES
+('Juan Pérez', 'Ventas', 3000.00),
+('María Gómez', 'Marketing', 3200.00),
+('Carlos Ruiz', 'TI', 4000.00);
 
-SELECT * FROM log_sueldos;
-
-
-
-
-
-
-
-
-CREATE OR REPLACE VIEW reporte_calificaciones AS
-    SELECT estudiantes.nombre, inscripciones.semestre, m.nombre AS materia.calificacion, calificaciones.calificacion FROM estudiantes INNER JOIN inscripciones
-    ON estudiantes.id=inscripciones.estudiante_id
-    INNER JOIN materias ON materias.id=inscripciones.materia_id
-    INNER JOIN calificaciones ON inscripciones.id=calificaciones.inscripcion_id;
-
--- consultar esa vista creada de catalogo peliculas
-SELECT * FROM reporte_calificaciones;
+INSERT INTO empresa.ventas (cliente, monto, comision) VALUES
+('Cliente A', 15000.00, 750.00),
+('Cliente B', 25000.00, 1250.00),
+('Cliente C', 10000.00, 500.00);
 
 
 
 
+-- ========== DEFINICION DE ROLES, VISTAS Y PERMISOS =============
+-- NOTA: se cambio a editor2, admin2,consultor2 por que se olvido dar permisos a rol de grupo
+-- y al intentar eliminar los usuarios del cluster da error porque al eliminar
+-- no deja porque el usuario depende de otras tablas
+-- Could not drop the role. privilegios para base de datos practica2 4 objetos en base de datos practica2no se puede eliminar el rol «admin» porque otros objetos dependen de él
 
-
-
-
-
-
-
-
-
-
-
-
-
-
--- Crear un usuario (roles) de tipo LOGIN
-CREATE ROLE administrador LOGIN PASSWORD '1234';
-
-CREATE ROLE usuario_simple LOGIN PASSWORD '1234';
-
-
-
--- Crear roles de grupo
-CREATE ROLE visualizador; -- es de grupo porque no tiene LOGIN
-CREATE ROLE editor;
-
--- Asignar el grupo a los usuarios
-GRANT visualizador TO administrador,usuario_simple;
-
-GRANT editor TO administrador;
-
-
+-- 1. Crea estos 3 roles:
+--    - admin (jefe total)
+--    - editor (puede editar cosas)
+--    - consultor (solo mira)
+CREATE ROLE admin2;
+CREATE ROLE editor2;
+CREATE ROLE consultor2;
 -- Asignar el privilegio de conectarse a un rol
-GRANT CONNECT ON DATABASE BD_roles TO visualizador; --el nombre de la BD
-GRANT USAGE ON SCHEMA public TO visualizador; -- el nombre del schema
+GRANT CONNECT ON DATABASE practica2 TO admin2,editor2,consultor2;
+GRANT USAGE ON SCHEMA empresa TO admin2,editor2,consultor2; 
+
+-- 2. Crea usuarios con contraseñas:
+--    - usuario_admin / admin123
+--    - usuario_editor / editor123
+--    - usuario_consultor / consultor123
+CREATE ROLE usuario_admin LOGIN PASSWORD '1234';
+CREATE ROLE usuario_editor LOGIN PASSWORD '1234';
+CREATE ROLE usuario_consultor LOGIN PASSWORD '1234';
+
+-- Dar rol de grupo a los usuarios de login
+GRANT admin2 TO usuario_admin;
+GRANT editor2 TO usuario_editor;
+GRANT consultor2 TO usuario_consultor;
+
+-- 3. Bloquea el acceso público al esquema "empresa"
+ REVOKE ALL ON SCHEMA empresa FROM PUBLIC;
+
+
+-- 4. Crea una VISTA llamada "v_ventas_publicas" que muestre:
+--    id, cliente, monto ( NO MUESTRA la columna "comision")
+CREATE OR REPLACE VIEW empresa.v_ventas_publicas AS
+    SELECT id, cliente, monto
+    FROM empresa.ventas;
+
+SELECT * FROM empresa.v_ventas_publicas;
+
+
+-- 5. Asigna permisos:
+--    Para ADMIN:
+--      - Acceso TOTAL a todas las tablas
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA empresa TO admin2;
+GRANT SELECT, INSERT, UPDATE, DELETE ON empresa.empleados to admin2;
+GRANT SELECT, INSERT, UPDATE, DELETE ON empresa.ventas to admin2;
+
+
+--
+--    Para EDITOR:
+--      - Ver/editar la tabla EMPLEADOS
+GRANT SELECT, INSERT, UPDATE ON empresa.empleados TO editor2;
+--      - Ver/editar solo la VISTA (no la tabla completa de ventas)
+GRANT SELECT, INSERT, UPDATE ON empresa.v_ventas_publicas TO editor2;
+--
+--    Para CONSULTOR:
+--      - Solo VER empleados y la vista
+GRANT SELECT ON empresa.empleados TO consultor2;
+GRANT SELECT ON empresa.v_ventas_publicas TO consultor2;
 
 
 
@@ -87,37 +101,60 @@ GRANT USAGE ON SCHEMA public TO visualizador; -- el nombre del schema
 
 
 
--- Crear roles de grupo: empleado y gerente
-CREATE ROLE empleado;
-CREATE ROLE gerente;
-
--- Otorgar permisos de conexion a la BD a los roles
-GRANT CONNECT ON DATABASE nombre_BD TO empleado,gerente; 
-GRANT USAGE ON SCHEMA public TO empleado,gerente; -- al schema public, puede ser otro como app
-
--- Crear roles de LOGIN (usuario) 
-CREATE ROLE Homero LOGIN PASSWORD '1234';
-CREATE ROLE Burns LOGIN PASSWORD '1234';
-
--- Asignar roles de grupo a los usuarios
-GRANT empleado TO Homero;
-GRANT gerente TO Burns;
-
--- Otorgar permisos a los usuarios sobre la tabla proyectos
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE proyectos TO gerente; 
-
--- GRANT ALL asigna todos los permisos
-GRANT ALL ON SEQUENCE proyectos_id_Seq TO gerente; -- pendiente, revisar esto
-            -- Como la tabla tiene un contador para el id, hay que dar permisos para acceder tambien a ese contador
-            -- usuarios_id_seq es el contador especial que hace eso
-            GRANT USAGE ON SEQUENCE app.ususarios_id_seq TO administrador; 
-            -- Solo se podra con la tabla ususarios
-            -- si se crean mas tablas con un id SERIAL ya no va a poder acceder
-            -- Asi que se tendria que hacer lo siguiente
-            GRANT USAGE ON ALL SEQUENCES TO IN SCHEMA app TO administrador;
-GRANT SELECT ON TABLE proyectos TO empleado;
+-- ========== PRUEBAS =============
 
 
 
--- Ejemplo REVOKE 
-REVOKE SELECT ON TABLE proyectos FROM empleado; -- quita el permiso select a empleado en la tabla proyectos
+/* Prueba ADMIN */
+-- Conviértete en admin:
+SET ROLE usuario_admin;
+
+-- Verifica que puedes:
+-- 1. Ver TODAS las ventas (con comisiones)
+SELECT * FROM empresa.ventas;
+-- 2. Cambiar el salario de Juan Pérez a 3500
+UPDATE empresa.empleados SET salario=3500 WHERE nombre='Juan Perez';
+-- Vuelve a ser tú:
+RESET ROLE;
+
+
+
+
+/* Prueba EDITOR */
+-- Conviértete en editor:
+SET ROLE usuario_editor;
+
+-- Verifica que puedes:
+-- 1. Ver empleados
+SELECT * FROM empresa.empleados;
+-- 2. Ver la VISTA de ventas (sin comisiones)
+SELECT * FROM empresa.v_ventas_publicas;
+-- 3. Cambiar el salario de María Gómez a 3400
+UPDATE empresa.empleados SET salario=3400 WHERE nombre='María Gómez';
+
+-- Pero NO puedes:
+-- 4. Ver columna "comision" (¡error!)
+SELECT comision FROM empresa.ventas;
+-- 5. Eliminar empleados (¡error!)
+DELETE FROM empresa.empleados WHERE nombre='Carlos Ruiz';
+-- Vuelve a ser tú:
+RESET ROLE;
+
+
+
+/* Prueba CONSULTOR */
+-- Conviértete en consultor:
+SET ROLE usuario_consultor;
+
+-- Verifica que puedes:
+-- 1. Ver empleados
+SELECT * FROM empresa.empleados;
+-- 2. Ver la VISTA de ventas
+SELECT * FROM empresa.v_ventas_publicas;
+
+-- Pero NO puedes:
+-- 3. Cambiar salarios (¡error!)
+UPDATE empresa.empleados SET salario=9999 WHERE nombre='Juan Perez';
+
+-- Vuelve a ser tú:
+RESET ROLE;
