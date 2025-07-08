@@ -41,3 +41,6 @@ SELECT datos->'Trabajo' AS trabajo, datos->'Direccion'->'Numero' AS numero_casa 
     -- 3. nuevo valor del atributo
 UPDATE info_usuario SET datos=jsonb_set(datos,'{Direccion,Numero}','50');
 UPDATE info_usuario SET datos=jsonb_set(datos,'{Direccion,Numero}',"50"); -- de esta forma el 50 se cambia a una cadena en vez de un numero
+
+-- Entonces los JSON son muy maleables pero no existe una forma o mecanismo que garantize que los datos sean consistentes
+-- Teniendo la desventaja de que el administrador pueda cometer errores fatales
