@@ -238,15 +238,22 @@ SELECT * FROM productos WHERE nombre='Smartphone';
 
 -- 4. Agregar un nuevo campo 'bluetooth' con valor true al producto "Tablet"
 --    (Usa el operador || para concatenar un nuevo objeto JSONB)
+UPDATE productos SET atributos = atributos || '{"bluetooth": true}'::jsonb WHERE nombre = 'Tablet';
+-- Verificamos el cambio
+SELECT nombre, atributos FROM productos WHERE nombre='Tablet';
 
 -- 5. Seleccionar los productos que tienen la clave 'ram' en 'atributos'
 --    (Usa el operador ?)
+SELECT * FROM productos WHERE atributos? 'ram';
 
 -- 6. Seleccionar los productos que tienen alguna de las claves 'resistencia_agua' o 'bateria_mAh'
 --    (Usa el operador ?| con un arreglo de claves)
+SELECT * FROM productos WHERE atributos ?| array['resistencia_agua', 'bateria_mAh'];
 
 -- 7. Seleccionar los productos que tienen ambas claves 'procesador' y 'ram'
 --    (Usa el operador ?& con un arreglo de claves)
+SELECT * FROM productos WHERE atributos ?& array['procesador', 'ram'];
 
 -- 8. Extraer el primer color disponible del producto "Laptop"
 --    (Usa -> para obtener el arreglo y ->> para acceder a la primera posición)
+SELECT nombre, atributos->'colores'->>0 AS primer_color FROM productos WHERE nombre = 'Laptop';
