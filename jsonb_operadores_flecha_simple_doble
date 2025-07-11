@@ -1,0 +1,252 @@
+-- EN GENERAL NO CONVIENE USAR OBJETOS JSON SI SE PUEDE REPRESENTAR
+-- LA INFORMACION CON RELACIONES 1-1, 1-N, N-N
+-- CONVIENE USAR JSON CUANDO SE TIENE UNA TABLA QUE PUEDE TENER
+-- CIENTOS O DECENAS DE ATRIBUTOS VARIABLES
+
+
+
+
+
+-- uso de operadores -> y ->>, ::jsonb y -, ||, ?, ?|, ?&
+--  ->          REGRESA UN OBJETO JSONB
+--  ->>         REGRESA UN TEXTO PLANO (VARCHAR)
+--  ::jsonb     CASTEA DE CADENA A JSONB
+--  -           REMUEVE ATRIBUTOS DE UN OBJETO JSON
+-- jsonb_set    (JSON,RUTA_A_MODIFICAR,NUEVO_VALOR)
+-- ||           AGREGA CAMPOS DE UN JSON1 A JSON2, si hay repetidos se reemplazan
+-- ?            VERIFICA SI ALGO EXISTE Y LO DEVUELVE
+
+
+-- Crear tabla productos con id SERIAL (autoincremental)
+DROP TABLE IF EXISTS productos;
+CREATE TABLE productos (
+    id             SERIAL PRIMARY KEY,
+    nombre         TEXT UNIQUE NOT NULL,
+    precio         NUMERIC(15,2) NOT NULL,
+    peso_kg        REAL NOT NULL,
+    disponible     INTEGER NOT NULL CHECK (disponible >= 0),
+    fabricante     TEXT,
+    tamano_paquete INTEGER NOT NULL CHECK (tamano_paquete >= 0),
+    atributos      JSONB
+);
+
+-- Insertar datos de prueba sin especificar id (se genera automáticamente)
+INSERT INTO productos (nombre, precio, peso_kg, disponible, fabricante, tamano_paquete, atributos) VALUES
+('Laptop', 1500.00, 2.5, 10, 'TechCorp', 1, '{
+    "procesador": "Intel i7",
+    "ram": "16GB",
+    "almacenamiento": "512GB SSD",
+    "colores": ["negro", "gris"],
+    "garantia_meses": 24,
+    "activo": true
+}'::jsonb),
+('Smartphone', 800.00, 0.3, 0, 'PhoneInc', 1, '{
+    "procesador": "Snapdragon 865",
+    "ram": "8GB",
+    "bateria_mAh": 4000,
+    "resistencia_agua": true,
+    "colores": ["blanco", "azul", "rojo"],
+    "garantia_meses": 12,
+    "activo": false
+}'::jsonb),
+('Tablet', 600.00, 0.5, 5, 'TabMakers', 1, '{
+    "procesador": "MediaTek Helio",
+    "ram": "8GB",
+    "almacenamiento": "256GB",
+    "pantalla_pulgadas": 10.1,
+    "sistema_operativo": "Android",
+    "colores": ["blanco", "negro"]
+}'::jsonb),
+('Silla ergonómica', 120.00, 7.5, 15, 'MueblesPlus', 2, '{
+    "material": "malla",
+    "color": "negro",
+    "ajustes": ["altura", "reclinación"],
+    "peso_maximo_kg": 120
+}'::jsonb),
+('Libro "Cien Años de Soledad"', 25.00, 0.7, 50, 'Editorial ABC', 1, '{
+    "autor": "Gabriel García Márquez",
+    "genero": "Novela",
+    "paginas": 417,
+    "idioma": "español"
+}'::jsonb),
+('Monitor 4K', 400.00, 4.0, 8, 'ScreenTech', 1, '{
+    "resolucion": "3840x2160",
+    "tamaño_pulgadas": 27,
+    "tipo_panel": "IPS",
+    "puertos": ["HDMI", "DisplayPort"],
+    "colores": ["negro"]
+}'::jsonb),
+('Cámara réflex', 950.00, 1.2, 3, 'FotoPro', 1, '{
+    "megapixeles": 24.2,
+    "sensor": "APS-C",
+    "video": "4K UHD",
+    "zoom_optico": 10
+}'::jsonb),
+('Set de jardinería', 60.00, 5.0, 20, 'GardenTools', 1, '{
+    "herramientas": ["pala", "rastrillo", "tijeras"],
+    "material": "acero inoxidable",
+    "uso_interior": false
+}'::jsonb),
+('Reloj inteligente', 199.00, 0.2, 12, 'WearTech', 1, '{}');
+
+
+INSERT INTO productos (nombre, precio, peso_kg, disponible, fabricante, tamano_paquete, atributos) VALUES
+('Cable', 100.00, 2.5, 10, 'TechCorp', 1, '{
+    "blindaje": {
+		"tipo_malla":"cruzada",
+		"ram":"8GB"
+	}    
+}'::jsonb);
+
+
+
+
+
+SELECT * FROM productos;
+
+
+
+
+-- ----------------------- Ejemplo de -> ----------------------- 
+-- consultamos el atributo ram del producto cuyo id es 1
+SELECT atributos->'ram' FROM productos WHERE id=1; -- se accede a la "columna" de atributos para ver la ram del JSON
+
+
+
+-- ----------------------- Ejemplo de ->> ----------------------- 
+SELECT atributos->>'ram' FROM productos WHERE id=1;
+
+-- problema: consultar todos los productos que tengan 16GB de ram
+SELECT * FROM productos WHERE atributos->>'ram'='16GB';
+-- Se usa ->> porque se compara un texto plano con texto plano
+-- Si se usa -> da error porque se compararia un binario con una cadena
+
+
+
+
+-- ----------------------- Ejemplo de ::jsonb ----------------------- 
+SELECT '"16GB"'::jsonb; -- se usa comillas dobles dentro de las comillas simples para indicar que el objeto jsonb es una cadena paraa convertir
+
+-- HACEMOS UN WHERE CON jsonb
+SELECT * FROM productos WHERE atributos->'ram'='"16GB"'::jsonb;
+
+
+
+
+
+-- -----------------------  Ejemplo de - (trabaja con objetos jsonb) ----------------------- 
+SELECT atributos-'ram' FROM productos WHERE id=1; -- muestra el objeto atributos excepto (menos) el de ram
+
+SELECT atributos FROM productos WHERE id=1; -- muestra el objeto atributos completo
+
+
+-- El operador - crea una copia del objeto original con esa modificacion al mostrarse
+-- si queremos remover el ram de blindaje de producto cuyo id=10 entonces se haria con
+-- jsonb_set
+
+-- removemos el atributo ram
+UPDATE productos SET atributos=jsonb_set(atributos,'{blindaje}',(atributos->'blindaje')-'ram') WHERE id=10; -- aqui se usa parentesis por precedencia de operadores, ya que postgres se confunde si ve -> y - en una sola query
+
+-- mostramos actualizado
+SELECT * FROM productos WHERE id=10;
+
+-- QUEREMOS ACTUALIZAR atributos para productos id=1 removiendo ram
+UPDATE productos SET atributos = atributos-'ram' WHERE id=1;
+SELECT atributos FROM productos WHERE id=1;
+
+
+
+
+
+
+
+--- -----------------------  Ejemplo de || ----------------------- 
+--- el operador json1 || json2
+--- todos los campos de json2 se agregan a json1
+--- si hay campos repetidos se reemplazan
+SELECT '{
+   "nombre":"Homero Thomson",
+   "edad":39
+}'::jsonb 
+
+|| 
+
+'{
+   "nombre":"Homero Simpson",
+   "domicio":"Avenida Siempre viva"
+}'::jsonb
+;
+
+
+
+
+
+
+-- ----------------------- Ejemplo de ? ----------------------- 
+-- mostramos todos los productos que tengan el atributo 'ram'
+SELECT * FROM productos WHERE atributos?'ram';
+
+-- mostramos todos los productos que NO tengan el atributo 'ram'
+SELECT * FROM productos WHERE not atributos?'ram';
+
+
+
+
+-- ----------------------- Ejemplo de ?| ----------------------- 
+-- El operador ?| se usa para evaluar si se tienen uno o mas de los atributos
+-- mostrar productos que tengan el atributo 'ram' o que tengan 'material'
+SELECT * FROM productos WHERE atributos?|array['ram','material']; -- es como decir WHERE atributos?'ram' OR atributos?'material'
+
+
+
+
+
+-- ----------------------- Ejemplo de ?& ----------------------- 
+-- El operador ?& se usa para evaluar que se tengan todos los atributos
+-- mostrar productos que tengan campo ram y procesador
+SELECT * FROM productos WHERE atributos?&array['ram','procesador'];
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- EJERCICIO ---
+-- 1. Obtener el nombre y el valor del campo 'procesador' del producto "Laptop"
+--    (Usa el operador ->> para extraer el valor como texto)
+SELECT nombre, atributos->>'procesador' FROM productos WHERE nombre='Laptop';
+
+-- 2. Obtener el contenido del campo 'procesador' del producto con id = 2
+--    (Usa el operador -> para obtener el JSONB)
+SELECT nombre, atributos->'procesador' FROM productos WHERE id=2;
+
+-- 3. Eliminar la clave 'activo' del producto "Smartphone"
+--    (Usa el operador - para remover una clave del JSONB)
+UPDATE productos set atributos = atributos - 'activo' WHERE nombre='Smartphone';
+SELECT * FROM productos WHERE nombre='Smartphone';
+
+-- 4. Agregar un nuevo campo 'bluetooth' con valor true al producto "Tablet"
+--    (Usa el operador || para concatenar un nuevo objeto JSONB)
+
+-- 5. Seleccionar los productos que tienen la clave 'ram' en 'atributos'
+--    (Usa el operador ?)
+
+-- 6. Seleccionar los productos que tienen alguna de las claves 'resistencia_agua' o 'bateria_mAh'
+--    (Usa el operador ?| con un arreglo de claves)
+
+-- 7. Seleccionar los productos que tienen ambas claves 'procesador' y 'ram'
+--    (Usa el operador ?& con un arreglo de claves)
+
+-- 8. Extraer el primer color disponible del producto "Laptop"
+--    (Usa -> para obtener el arreglo y ->> para acceder a la primera posición)
