@@ -114,6 +114,7 @@ SELECT nombre FROM aves WHERE (info->'nido'->>'altura_metros')::INT>10; -- caste
 
 
 
+
 -- ========== PRUEBAS PARTE 2 =============
 -- 6 Eliminar campo hibernacion
 --UPDATE mamiferos SET info=jsonb_set(info,'{}',(info->'hibernacion')-'hibernacion'); -- {} solito porue hibernacion no esta dentro de otro campo como en el ejemplo de =jsonb_set(atributos,'{blindaje}',(atributos->'blindaje')-'ram')
