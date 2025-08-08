@@ -1,0 +1,10 @@
+[
+  { "_id": "C101", "titulo": "Programación", "docente": "Dr. Ruiz", "duracion": 40 },
+  { "_id": "C102", "titulo": "Álgebra", "docente": "Mtra. Gómez", "duracion": 30 },
+  { "_id": "C103", "titulo": "Física Moderna", "docente": "Dr. Ortega", "duracion": 45 },
+  { "_id": "C104", "titulo": "Química Orgánica", "docente": "Dra. Silva", "duracion": 38 },
+  { "_id": "C105", "titulo": "Cálculo Vectorial", "docente": "Mtro. Díaz", "duracion": 32 },
+  { "_id": "C106", "titulo": "Biología Celular", "docente": "Mtra. López", "duracion": 25 },
+  { "_id": "C107", "titulo": "Bases de Datos", "docente": "Ing. Ramos", "duracion": 40 },
+  { "_id": "C108", "titulo": "Ecuaciones Diferenciales", "docente": "Dr. Paredes", "duracion": 35 }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "_id": 1,
+    "nombre": "Ana Morales",
+    "edad": 20,
+    "carrera": "Ingeniería",
+    "cursos_ids": ["C101", "C107"],
+    "notas": [8.5, 9.0]
+  },
+  {
+    "_id": 2,
+    "nombre": "Luis Pérez",
+    "edad": 22,
+    "carrera": "Matemáticas",
+    "cursos_ids": ["C102", "C108"],
+    "notas": [7.0, 6.5]
+  },
+  {
+    "_id": 3,
+    "nombre": "María López",
+    "edad": 21,
+    "carrera": "Física",
+    "cursos_ids": ["C103", "C105"],
+    "notas": [9.2, 8.8]
+  },
+  {
+    "_id": 4,
+    "nombre": "Carlos Sánchez",
+    "edad": 23,
+    "carrera": "Ingeniería",
+    "cursos_ids": ["C101", "C105"],
+    "notas": [6.5, 7.0]
+  },
+  {
+    "_id": 5,
+    "nombre": "Fernanda Díaz",
+    "edad": 19,
+    "carrera": "Matemáticas",
+    "cursos_ids": ["C102", "C108"],
+    "notas": [9.0, 9.5]
+  },
+  {
+    "_id": 6,
+    "nombre": "José Ramírez",
+    "edad": 24,
+    "carrera": "Ingeniería",
+    "cursos_ids": ["C101", "C107"],
+    "notas": [6.0, 6.5]
+  },
+  {
+    "_id": 7,
+    "nombre": "Elena Torres",
+    "edad": 20,
+    "carrera": "Física",
+    "cursos_ids": ["C103", "C104"],
+    "notas": [8.8, 9.1]
+  },
+  {
+    "_id": 8,
+    "nombre": "Pedro Aguilar",
+    "edad": 22,
+    "carrera": "Química",
+    "cursos_ids": ["C104", "C105"],
+    "notas": [7.5, 6.8]
+  },
+  {
+    "_id": 9,
+    "nombre": "Lucía Herrera",
+    "edad": 23,
+    "carrera": "Ingeniería",
+    "cursos_ids": ["C107", "C108"],
+    "notas": [8.0, 8.5]
+  },
+  {
+    "_id": 10,
+    "nombre": "Miguel Castillo",
+    "edad": 21,
+    "carrera": "Biología",
+    "cursos_ids": ["C106", "C103"],
+    "notas": [7.2, 7.8]
+  }
+]
